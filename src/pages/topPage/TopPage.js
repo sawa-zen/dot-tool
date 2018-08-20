@@ -1,87 +1,74 @@
-import React from 'react';
-import { pure } from 'recompose';
+import * as React from 'react';
 import { connect } from 'react-redux';
 import styled from 'styled-components';
-import { setCurrentPage } from '../../router/routerAction';
-import Page from '../../components/Page';
-import PrimaryButton from '../../components/PrimaryButton';
 
-const Title = styled.h1`
-  position: absolute;
-  top: 60px;
-  left: 0;
-  right: 0;
-  margin: auto;
-  color: white;
-  text-align: center;
-  font-size: 48px;
-`;
+class TopScene extends React.Component {
+  _onChange = (event) => {
+    var file = event.target.files[0];
+    var image = new Image();
+    var reader = new FileReader();
 
-const HighScore = styled.div`
-  position: absolute;
-  top: 220px;
-  left: 0;
-  right: 0;
-  margin: auto;
-  text-align: center;
-  font-size: 20px;
-  color: white;
-`;
-
-const StartButton = styled(PrimaryButton)`
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 60px;
-  margin: auto;
-  width: 200px;
-`;
-
-const MadeBy = styled.div`
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 20px;
-  color: white;
-  text-align: center;
-  font-size: 0.8rem;
-
-  a {
-    color: #44ACEB;
+    reader.onload = (evt) => {
+      image.onload = () => {
+        this._canvas.width = image.width;
+        this._canvas.height = image.height;
+        var ctx = this._canvas.getContext("2d");
+        ctx.drawImage(image, 0, 0);
+      }
+      image.src = evt.target.result;
+    }
+    reader.readAsDataURL(file);
   }
+
+  state = {
+    value: '',
+  }
+
+  _onClickButton = () => {
+    const ctx = this._canvas.getContext("2d");
+    const w = this._canvas.clientWidth;
+    const h = this._canvas.clientHeight;
+    const dotList = [];
+
+    for(let y = 0; y < h; y++) {
+      for(let x = 0; x < w; x++) {
+        const imageData = ctx.getImageData(x, y, 1, 1);
+        const colorData = imageData.data;
+
+        if (colorData[3] === 0) {
+          continue;
+        }
+
+        dotList.push([
+          x, y,
+          colorData[0],
+          colorData[1],
+          colorData[2],
+          colorData[3]
+        ]);
+      }
+    }
+    console.info(dotList.length);
+    this.setState({
+      value: JSON.stringify(dotList, null, '\t'),
+    });
+  }
+
+  render() {
+    return (
+      <Wrapper>
+        <input type="file" onChange={this._onChange} accept="image/png"/>
+        <canvas id="myCanvas" ref={element => this._canvas = element} />
+        <button onClick={this._onClickButton}>ボタン</button>
+        <div>
+          {this.state.value}
+        </div>
+      </Wrapper>
+    );
+  }
+}
+
+const Wrapper = styled.div`
 `;
 
-const TopScene = pure((props) => {
-  const sec = ('000' + Math.floor(props.highScore / 60)).slice(-3);
-  const msec = ('00' + props.highScore % 60).slice(-2);
-  const time = `${sec}.${msec}`;
-
-  return (
-    <Page>
-      <Title>METEOR<br/>ESCAPE</Title>
-      <HighScore>HIGH SCORE：{time}</HighScore>
-      <StartButton
-        label="START"
-        onClick={props.onClickStart}
-      />
-      <MadeBy>
-        made by <a href="https://twitter.com/sawada_tkys?lang=ja" target="_blank">@sawa-zen</a>
-      </MadeBy>
-    </Page>
-  );
-});
-
-const mapStateToProps = (state) => ({
-  highScore: state.gamePage.highScore,
-});
-
-const mapDispatchToProps = (dispatch) => ({
-  onClickStart: () => {
-    dispatch(setCurrentPage('game'));
-  },
-});
-
-export default connect(
-  mapStateToProps,
-  mapDispatchToProps,
-)(TopScene);
+export default TopScene;
