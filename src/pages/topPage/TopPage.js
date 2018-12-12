@@ -49,9 +49,18 @@ class TopScene extends React.Component {
       }
     }
     console.info(dotList.length);
-    this.setState({
-      value: JSON.stringify(dotList, null, '\t'),
-    });
+
+    const value = JSON.stringify(dotList);
+    this.setState({ value });
+
+    function download(content, fileName, contentType) {
+      var a = document.createElement("a");
+      var file = new Blob([content], {type: contentType});
+      a.href = URL.createObjectURL(file);
+      a.download = fileName;
+      a.click();
+    }
+    download(value, 'json.txt', 'text/plain');
   }
 
   render() {
